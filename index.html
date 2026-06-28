@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>화학 평형 탐구</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue: #2563eb; --blue-dark: #1d4ed8; --blue-light: #eff6ff; --blue-border: #bfdbfe;
+      --teal: #0f766e; --teal-dark: #0d6b63; --teal-light: #f0fdfa; --teal-border: #99f6e4;
+      --red: #dc2626; --red-light: #fef2f2;
+      --gray-50: #f8fafc; --gray-100: #f1f5f9; --gray-200: #e2e8f0;
+      --gray-400: #94a3b8; --gray-500: #64748b; --gray-700: #334155; --gray-900: #0f172a;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+      background: var(--gray-50); color: var(--gray-900); min-height: 100vh; font-size: 16px;
+    }
+
+    .page-header { color: white; padding: 14px 20px; position: sticky; top: 0; z-index: 100; box-shadow: 0 1px 4px rgba(0,0,0,0.2); }
+    .page-header.blue { background: var(--blue); }
+    .page-header.teal { background: var(--teal); }
+    .page-header-inner { max-width: 860px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; }
+    .page-header h1 { font-size: 1rem; font-weight: 600; }
+    .tag { background: rgba(255,255,255,0.22); padding: 3px 10px; border-radius: 20px; font-size: 0.78rem; }
+
+    .container { max-width: 860px; margin: 0 auto; padding: 24px 16px 80px; }
+    .section { margin-bottom: 28px; }
+    .section-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--gray-500); margin-bottom: 10px; }
+    .divider { border: none; border-top: 1px solid var(--gray-200); margin: 24px 0; }
+
+    /* reaction cards */
+    .reaction-card { background: white; border: 1px solid var(--gray-200); border-radius: 12px; margin-bottom: 10px; }
+    .reaction-card-body { padding: 14px 16px; display: flex; align-items: flex-start; gap: 10px; }
+    .reaction-index { width: 24px; height: 24px; background: var(--blue-light); color: var(--blue); border-radius: 6px; font-size: 0.76rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+    .reaction-info { flex: 1; min-width: 0; }
+    .reaction-equation { font-size: 0.95rem; font-weight: 600; margin-bottom: 5px; line-height: 1.5; }
+    .reaction-meta { font-size: 0.78rem; color: var(--gray-500); }
+    .reaction-meta strong { color: var(--gray-700); }
+    .reaction-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+    /* buttons */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 10px 18px; border-radius: 8px; font-size: 0.875rem; font-weight: 500; cursor: pointer; border: none; transition: background 0.12s, opacity 0.12s; min-height: 44px; -webkit-tap-highlight-color: transparent; }
+    .btn:active { opacity: 0.8; }
+    .btn-primary { background: var(--blue); color: white; }
+    .btn-primary:hover { background: var(--blue-dark); }
+    .btn-teal { background: var(--teal); color: white; }
+    .btn-teal:hover { background: var(--teal-dark); }
+    .btn-ghost { background: transparent; border: 1px solid var(--gray-200); color: var(--gray-700); }
+    .btn-ghost:hover { background: var(--gray-100); }
+    .btn-danger-ghost { background: transparent; border: 1px solid transparent; color: var(--red); }
+    .btn-danger-ghost:hover { background: var(--red-light); border-color: #fca5a5; }
+    .btn-sm { padding: 7px 14px; min-height: 36px; font-size: 0.82rem; }
+    .btn-full { width: 100%; }
+    .btn-icon { width: 36px; height: 36px; padding: 0; border-radius: 8px; background: var(--gray-100); border: none; color: var(--gray-700); cursor: pointer; font-size: 0.95rem; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; }
+    .btn-icon:hover { background: var(--gray-200); }
+    .btn-icon.danger { color: var(--red); }
+    .btn-icon.danger:hover { background: var(--red-light); }
+    .btn-icon:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    /* modal */
+    .modal-backdrop { position: fixed; inset: 0; background: rgba(15,23,42,0.5); z-index: 200; display: flex; align-items: flex-end; justify-content: center; }
+    @media (min-width: 640px) { .modal-backdrop { align-items: center; padding: 20px; } }
+    .modal { background: white; width: 100%; max-width: 620px; border-radius: 20px 20px 0 0; max-height: 92vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    @media (min-width: 640px) { .modal { border-radius: 16px; max-height: 88vh; } }
+    .modal-header { padding: 18px 20px 14px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--gray-200); position: sticky; top: 0; background: white; z-index: 1; }
+    .modal-title { font-size: 1.05rem; font-weight: 600; }
+    .modal-body { padding: 20px; }
+    .modal-footer { padding: 14px 20px; border-top: 1px solid var(--gray-200); display: flex; gap: 8px; justify-content: flex-end; }
+
+    /* form */
+    .form-group { margin-bottom: 14px; }
+    .form-label { display: block; font-size: 0.82rem; font-weight: 500; color: var(--gray-500); margin-bottom: 5px; }
+    .form-input, .form-select { width: 100%; padding: 10px 12px; border: 1.5px solid var(--gray-200); border-radius: 8px; font-size: 1rem; color: var(--gray-900); background: white; -webkit-appearance: none; appearance: none; transition: border-color 0.12s; }
+    .form-input:focus, .form-select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+    .form-select { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 8px center; background-size: 20px; padding-right: 32px; }
+    .form-row { display: flex; gap: 10px; }
+    .form-row > .form-group { flex: 1; }
+    .form-hint { font-size: 0.75rem; color: var(--gray-400); margin-top: 5px; }
+
+    /* substance editor */
+    .substances-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+    .substances-label { font-size: 0.82rem; font-weight: 600; color: var(--gray-500); }
+    .substance-row { display: flex; gap: 6px; align-items: center; margin-bottom: 7px; }
+    .substance-row .form-input, .substance-row .form-select { padding: 8px 10px; font-size: 0.9rem; }
+    .substance-row .form-select { background-position: right 4px center; padding-right: 22px; }
+    .sub-coeff { width: 52px; flex-shrink: 0; text-align: center; }
+    .sub-formula { flex: 1; min-width: 60px; }
+    .sub-state { width: 64px; flex-shrink: 0; }
+    .sub-fixed { width: 78px; flex-shrink: 0; }
+
+    /* equation preview */
+    .eq-preview { background: var(--blue-light); border: 1px solid var(--blue-border); border-radius: 8px; padding: 10px 14px; font-size: 0.95rem; font-weight: 600; text-align: center; color: var(--blue-dark); margin-bottom: 18px; min-height: 40px; line-height: 1.6; }
+    .eq-preview.teal { background: var(--teal-light); border-color: var(--teal-border); color: var(--teal); }
+
+    /* link */
+    .link-box { background: var(--gray-100); border: 1px solid var(--gray-200); border-radius: 8px; padding: 12px; font-family: monospace; font-size: 0.73rem; word-break: break-all; color: var(--gray-500); margin-top: 8px; user-select: all; }
+    .link-actions { display: flex; gap: 8px; margin-top: 8px; }
+
+    /* student inputs */
+    .s-inputs-grid { display: flex; flex-direction: column; gap: 8px; }
+    .s-input-row { display: flex; align-items: center; gap: 10px; }
+    .s-input-label { min-width: 120px; font-size: 0.92rem; font-weight: 600; flex-shrink: 0; }
+    .s-input-row .form-input { flex: 1; font-size: 1rem; }
+    .s-unit { font-size: 0.82rem; color: var(--gray-500); flex-shrink: 0; }
+
+    /* temperature slider */
+    .temp-box { background: var(--teal-light); border: 1px solid var(--teal-border); border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; }
+    .temp-box-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .temp-label { font-size: 0.85rem; font-weight: 600; color: var(--teal); }
+    .temp-value { font-size: 1.2rem; font-weight: 700; color: var(--teal); }
+    input[type=range] { width: 100%; accent-color: var(--teal); cursor: pointer; }
+    .temp-range-labels { display: flex; justify-content: space-between; margin-top: 4px; font-size: 0.72rem; color: var(--gray-400); }
+
+    /* table */
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 8px; border: 1px solid var(--gray-200); }
+    table.result-table { border-collapse: collapse; white-space: nowrap; font-size: 0.82rem; width: 100%; }
+    .result-table th, .result-table td { border: 1px solid var(--gray-200); padding: 7px 10px; text-align: center; }
+    .result-table thead th { background: var(--gray-100); font-weight: 600; font-size: 0.78rem; line-height: 1.4; }
+    .result-table thead th.group-header { background: var(--teal-light); color: var(--teal); font-size: 0.75rem; }
+    .result-table td.label-cell { background: var(--gray-50); font-weight: 600; font-size: 0.8rem; }
+    .result-table td.temp-cell { background: var(--teal-light); color: var(--teal); font-weight: 600; }
+    .result-table td.fixed-cell { color: var(--gray-400); font-style: italic; }
+    .result-table td.formula-cell { font-weight: 600; color: var(--teal-dark); }
+    .result-table tbody tr:hover td { background: #f8fffd; }
+
+    /* fraction */
+    .frac { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; line-height: 1.3; font-size: 0.85em; }
+    .fn { border-bottom: 1px solid currentColor; padding: 0 3px 2px; }
+    .fd { padding: 2px 3px 0; }
+
+    /* tabs */
+    .reaction-tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+    .tab-btn { padding: 8px 16px; border-radius: 8px; border: 1.5px solid var(--gray-200); background: white; color: var(--gray-700); font-size: 0.85rem; font-weight: 500; cursor: pointer; min-height: 40px; -webkit-tap-highlight-color: transparent; transition: all 0.12s; }
+    .tab-btn:hover { background: var(--gray-100); }
+    .tab-btn.active { background: var(--teal); color: white; border-color: var(--teal); }
+
+    /* misc */
+    .empty-state { text-align: center; padding: 32px 16px; color: var(--gray-400); font-size: 0.9rem; border: 1.5px dashed var(--gray-200); border-radius: 12px; }
+    .hidden { display: none !important; }
+    .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--gray-900); color: white; padding: 10px 20px; border-radius: 20px; font-size: 0.85rem; z-index: 999; pointer-events: none; opacity: 0; transition: opacity 0.2s; white-space: nowrap; }
+    .toast.show { opacity: 1; }
+
+    @media (max-width: 480px) { .s-input-label { min-width: 90px; font-size: 0.85rem; } }
+  </style>
+</head>
+<body>
+
+<!-- ── 교사 페이지 ── -->
+<div id="teacher-page" class="hidden">
+  <div class="page-header blue">
+    <div class="page-header-inner">
+      <h1>화학 평형 탐구 — 교사 설정</h1>
+      <span class="tag">모듈 1</span>
+    </div>
+  </div>
+  <div class="container">
+    <div class="section">
+      <div class="section-label">반응 목록</div>
+      <div id="reaction-list"></div>
+      <button class="btn btn-ghost btn-full" style="margin-top:10px" onclick="openAddModal()">+ 반응 추가</button>
+    </div>
+    <hr class="divider">
+    <div class="section">
+      <div class="section-label">학생용 링크 생성</div>
+      <p style="font-size:0.85rem;color:var(--gray-500);margin-bottom:12px;line-height:1.6">
+        현재 설정을 담은 학생용 링크를 생성합니다. 이 링크로 QR 코드를 만들어 배포하세요.
+        <strong style="color:var(--gray-700)">온도와 K는 학생 화면에 표시되지 않습니다.</strong>
+      </p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="generateLink()">링크 생성</button>
+        <button class="btn btn-ghost" onclick="previewStudent()">학생 화면 미리보기</button>
+      </div>
+      <div id="link-result" class="hidden">
+        <div id="link-text" class="link-box"></div>
+        <div class="link-actions">
+          <button class="btn btn-ghost btn-sm" onclick="copyLink()">클립보드에 복사</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 학생 페이지 ── -->
+<div id="student-page" class="hidden">
+  <div class="page-header teal">
+    <div class="page-header-inner">
+      <h1>화학 평형 탐구</h1>
+      <span class="tag">모듈 1</span>
+    </div>
+  </div>
+  <div class="container">
+    <div class="section">
+      <div class="section-label">반응 선택</div>
+      <div id="s-tabs" class="reaction-tabs"></div>
+    </div>
+    <div id="s-equation" class="eq-preview teal" style="margin-bottom:24px">—</div>
+    <div class="section">
+      <div class="section-label">초기 농도 입력</div>
+      <div id="s-input-area"></div>
+      <button class="btn btn-teal btn-full" style="margin-top:14px" onclick="addExperiment()">실험 추가</button>
+    </div>
+    <div class="section" id="s-results-section" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div class="section-label" style="margin:0">결과</div>
+        <button class="btn btn-ghost btn-sm" onclick="clearExperiments()">모두 지우기</button>
+      </div>
+      <div class="table-wrap">
+        <table id="s-table" class="result-table"></table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 교사 모달 ── -->
+<div id="modal-backdrop" class="modal-backdrop hidden" onclick="handleBackdropClick(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title">반응 추가</span>
+      <button class="btn-icon" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="eq-preview" class="eq-preview">—</div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">기준 온도 (°C)</label>
+          <input type="number" class="form-input" id="input-temp" placeholder="예: 25" step="any">
+        </div>
+        <div class="form-group">
+          <label class="form-label">평형 상수 K</label>
+          <input type="text" class="form-input" id="input-k" placeholder="예: 215 또는 1.8e-5">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">ΔH° (kJ/mol) <span style="color:var(--gray-400);font-weight:400">— 선택사항, 입력 시 학생이 온도 조절 가능</span></label>
+        <input type="text" class="form-input" id="input-dh" placeholder="발열: 음수 (예: -57.2)  /  흡열: 양수 (예: 92.4)  /  비워두면 온도 조절 없음">
+      </div>
+
+      <div class="form-row" id="temp-range-row">
+        <div class="form-group">
+          <label class="form-label">온도 슬라이더 최솟값 (°C)</label>
+          <input type="number" class="form-input" id="input-temp-min" placeholder="예: 0">
+        </div>
+        <div class="form-group">
+          <label class="form-label">온도 슬라이더 최댓값 (°C)</label>
+          <input type="number" class="form-input" id="input-temp-max" placeholder="예: 80">
+        </div>
+      </div>
+
+      <div style="margin-bottom:18px">
+        <div class="substances-header">
+          <span class="substances-label">반응물</span>
+          <button class="btn btn-ghost btn-sm" onclick="addSubstance('reactants')">+ 추가</button>
+        </div>
+        <p class="form-hint" style="margin-bottom:8px">화학식 예시: NO2, H3O+, CH3COO− → 숫자는 아래첨자, 끝의 +/−는 위첨자로 자동 변환</p>
+        <div id="reactants-container"></div>
+      </div>
+      <div>
+        <div class="substances-header">
+          <span class="substances-label">생성물</span>
+          <button class="btn btn-ghost btn-sm" onclick="addSubstance('products')">+ 추가</button>
+        </div>
+        <div id="products-container"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button id="modal-delete-btn" class="btn btn-danger-ghost hidden" onclick="deleteCurrentReaction()">삭제</button>
+      <button class="btn btn-ghost" onclick="closeModal()">취소</button>
+      <button class="btn btn-primary" onclick="saveReaction()">저장</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════
+// 기본 반응 데이터
+// ══════════════════════════════════════════════
+
+let reactions = [
+  {
+    id:'r1', temperature:25, K:215, deltaH:-57.2, tempMin:0, tempMax:80,
+    reactants:[{id:'s1',formula:'NO2', coefficient:2,state:'g',fixedConc:null}],
+    products: [{id:'s2',formula:'N2O4',coefficient:1,state:'g',fixedConc:null}]
+  },
+  {
+    id:'r2', temperature:425, K:54.3, deltaH:-9.4, tempMin:300, tempMax:600,
+    reactants:[
+      {id:'s3',formula:'H2',coefficient:1,state:'g',fixedConc:null},
+      {id:'s4',formula:'I2',coefficient:1,state:'g',fixedConc:null}
+    ],
+    products:[{id:'s5',formula:'HI',coefficient:2,state:'g',fixedConc:null}]
+  },
+  {
+    id:'r3', temperature:500, K:0.040, deltaH:-92.4, tempMin:300, tempMax:700,
+    reactants:[
+      {id:'s6',formula:'N2',coefficient:1,state:'g',fixedConc:null},
+      {id:'s7',formula:'H2',coefficient:3,state:'g',fixedConc:null}
+    ],
+    products:[{id:'s8',formula:'NH3',coefficient:2,state:'g',fixedConc:null}]
+  },
+  {
+    id:'r4', temperature:25, K:1.8e-5, deltaH:-0.4, tempMin:5, tempMax:60,
+    reactants:[
+      {id:'s9', formula:'CH3COOH',coefficient:1,state:'aq',fixedConc:null},
+      {id:'s10',formula:'H2O',    coefficient:1,state:'l', fixedConc:55.5}
+    ],
+    products:[
+      {id:'s11',formula:'CH3COO-',coefficient:1,state:'aq',fixedConc:null},
+      {id:'s12',formula:'H3O+',   coefficient:1,state:'aq',fixedConc:null}
+    ]
+  }
+];
+
+// ══════════════════════════════════════════════
+// 공통 유틸리티
+// ══════════════════════════════════════════════
+
+function formatFormula(f) {
+  if (!f) return '';
+  const m = f.match(/(\d*[+\-]+)$/);
+  let base = f, charge = '';
+  if (m) { charge = m[0]; base = f.slice(0, f.length - charge.length); }
+  let r = base.replace(/(\d+)/g, '<sub>$1</sub>');
+  if (charge) r += '<sup>' + charge + '</sup>';
+  return r;
+}
+
+function buildEquationHtml(r) {
+  if (!r?.reactants || !r?.products) return '—';
+  const side = arr => arr.filter(s=>s.formula.trim()).map(s=>{
+    const c = s.coefficient===1?'':s.coefficient;
+    const st = `<span style="font-size:0.78em;color:var(--gray-500)">(${s.state})</span>`;
+    return `${c}${formatFormula(s.formula)}${st}`;
+  }).join(' + ');
+  const L=side(r.reactants), R=side(r.products);
+  return (L||'?') + ' ⇌ ' + (R||'?');
+}
+
+function formatKHtml(k) {
+  if (k==null||isNaN(k)) return '?';
+  if (k===0) return '0';
+  const a=Math.abs(k);
+  if (a>=0.001&&a<100000) return parseFloat(k.toPrecision(4)).toString();
+  const e=Math.floor(Math.log10(a));
+  const m=parseFloat((k/Math.pow(10,e)).toPrecision(3));
+  return m===1?`10<sup>${e}</sup>`:`${m}×10<sup>${e}</sup>`;
+}
+
+function allSubs(r) { return [...r.reactants,...r.products]; }
+
+let toastTimer;
+function showToast(msg) {
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>el.classList.remove('show'),2200);
+}
+
+// ══════════════════════════════════════════════
+// 교사 페이지
+// ══════════════════════════════════════════════
+
+let editingId=null, substancesState={reactants:[],products:[]}, nextSubId=200;
+
+function render() {
+  const list=document.getElementById('reaction-list');
+  if (!reactions.length) { list.innerHTML='<div class="empty-state">아직 반응이 없습니다.</div>'; return; }
+  list.innerHTML=reactions.map((r,i)=>`
+    <div class="reaction-card">
+      <div class="reaction-card-body">
+        <div class="reaction-index">${i+1}</div>
+        <div class="reaction-info">
+          <div class="reaction-equation">${buildEquationHtml(r)}</div>
+          <div class="reaction-meta">
+            온도: <strong>${r.temperature}°C</strong>&nbsp;·&nbsp;K = <strong>${formatKHtml(r.K)}</strong>
+            ${r.deltaH!=null?`&nbsp;·&nbsp;ΔH° = <strong>${r.deltaH} kJ/mol</strong>`:''}
+          </div>
+        </div>
+        <div class="reaction-actions">
+          <button class="btn-icon" onclick="openEditModal('${r.id}')">✏️</button>
+          <button class="btn-icon danger" onclick="confirmDelete('${r.id}')">🗑</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function openAddModal() {
+  editingId=null;
+  document.getElementById('modal-title').textContent='반응 추가';
+  document.getElementById('modal-delete-btn').classList.add('hidden');
+  document.getElementById('input-temp').value='';
+  document.getElementById('input-k').value='';
+  document.getElementById('input-dh').value='';
+  document.getElementById('input-temp-min').value='';
+  document.getElementById('input-temp-max').value='';
+  substancesState={reactants:[newSub()],products:[newSub()]};
+  renderSubstances(); updatePreview();
+  document.getElementById('modal-backdrop').classList.remove('hidden');
+}
+
+function openEditModal(id) {
+  const r=reactions.find(x=>x.id===id); if(!r)return;
+  editingId=id;
+  document.getElementById('modal-title').textContent='반응 편집';
+  document.getElementById('modal-delete-btn').classList.remove('hidden');
+  document.getElementById('input-temp').value=r.temperature;
+  document.getElementById('input-k').value=r.K;
+  document.getElementById('input-dh').value=r.deltaH??'';
+  document.getElementById('input-temp-min').value=r.tempMin??'';
+  document.getElementById('input-temp-max').value=r.tempMax??'';
+  substancesState={reactants:r.reactants.map(s=>({...s})),products:r.products.map(s=>({...s}))};
+  renderSubstances(); updatePreview();
+  document.getElementById('modal-backdrop').classList.remove('hidden');
+}
+
+function closeModal() { document.getElementById('modal-backdrop').classList.add('hidden'); }
+function handleBackdropClick(e) { if(e.target===document.getElementById('modal-backdrop'))closeModal(); }
+
+function newSub() { return {id:'s'+(nextSubId++),formula:'',coefficient:1,state:'g',fixedConc:null}; }
+function addSubstance(side) { syncDOM(); substancesState[side].push(newSub()); renderSubstances(); }
+function removeSubstance(side,id) { syncDOM(); substancesState[side]=substancesState[side].filter(s=>s.id!==id); renderSubstances(); updatePreview(); }
+
+function renderSubstances() {
+  ['reactants','products'].forEach(side=>{
+    document.getElementById(`${side}-container`).innerHTML=substancesState[side].map(s=>buildSubRow(side,s)).join('');
+  });
+}
+
+function buildSubRow(side,s) {
+  const showF=s.state==='l'||s.state==='s';
+  const fv=s.fixedConc??(s.state==='l'?55.5:1);
+  const canDel=substancesState[side].length>1;
+  return `
+    <div class="substance-row" data-id="${s.id}" data-side="${side}">
+      <input type="number" class="form-input sub-coeff" value="${s.coefficient}" min="1" step="1" oninput="onField('${side}','${s.id}','coefficient',this.value)">
+      <input type="text"   class="form-input sub-formula" value="${s.formula}" placeholder="예: NO2" oninput="onField('${side}','${s.id}','formula',this.value)">
+      <select class="form-select sub-state" onchange="onField('${side}','${s.id}','state',this.value)">
+        <option value="g"  ${s.state==='g' ?'selected':''}>g</option>
+        <option value="aq" ${s.state==='aq'?'selected':''}>aq</option>
+        <option value="l"  ${s.state==='l' ?'selected':''}>l</option>
+        <option value="s"  ${s.state==='s' ?'selected':''}>s</option>
+      </select>
+      ${showF?`<input type="number" class="form-input sub-fixed" value="${fv}" step="any" placeholder="M" title="고정 농도(M)" oninput="onField('${side}','${s.id}','fixedConc',this.value)">`:`<div style="width:78px;flex-shrink:0"></div>`}
+      <button class="btn-icon danger" onclick="removeSubstance('${side}','${s.id}')" style="flex-shrink:0" ${canDel?'':'disabled'}>✕</button>
+    </div>`;
+}
+
+function onField(side,id,field,value) {
+  syncDOM();
+  const s=substancesState[side].find(x=>x.id===id); if(!s)return;
+  if(field==='coefficient') s.coefficient=Math.max(1,parseInt(value)||1);
+  else if(field==='formula') s.formula=value;
+  else if(field==='state') { s.state=value; s.fixedConc=(value==='l'||value==='s')?(s.fixedConc??(value==='l'?55.5:1)):null; renderSubstances(); }
+  else if(field==='fixedConc') s.fixedConc=parseFloat(value)||null;
+  updatePreview();
+}
+
+function syncDOM() {
+  ['reactants','products'].forEach(side=>{
+    document.getElementById(`${side}-container`).querySelectorAll('.substance-row').forEach(row=>{
+      const s=substancesState[side].find(x=>x.id===row.dataset.id); if(!s)return;
+      const c=row.querySelector('.sub-coeff'),f=row.querySelector('.sub-formula'),
+            st=row.querySelector('.sub-state'),fx=row.querySelector('.sub-fixed');
+      if(c) s.coefficient=Math.max(1,parseInt(c.value)||1);
+      if(f) s.formula=f.value;
+      if(st) s.state=st.value;
+      if(fx) s.fixedConc=parseFloat(fx.value)||null;
+    });
+  });
+}
+
+function updatePreview() {
+  document.getElementById('eq-preview').innerHTML=buildEquationHtml({reactants:substancesState.reactants,products:substancesState.products});
+}
+
+function saveReaction() {
+  syncDOM();
+  const temp=parseFloat(document.getElementById('input-temp').value);
+  const K=parseFloat(document.getElementById('input-k').value.replace(/×/g,'*'));
+  const dhRaw=document.getElementById('input-dh').value.trim();
+  const dh=dhRaw===''?null:parseFloat(dhRaw);
+  const tMin=document.getElementById('input-temp-min').value.trim();
+  const tMax=document.getElementById('input-temp-max').value.trim();
+
+  if(isNaN(temp)){showToast('온도를 입력하세요');return;}
+  if(isNaN(K)||K<=0){showToast('K 값을 올바르게 입력하세요');return;}
+  if(dhRaw!==''&&isNaN(dh)){showToast('ΔH° 값을 올바르게 입력하세요');return;}
+  if(substancesState.reactants.every(s=>!s.formula.trim())){showToast('반응물을 입력하세요');return;}
+  if(substancesState.products.every(s=>!s.formula.trim())){showToast('생성물을 입력하세요');return;}
+
+  const data={
+    temperature:temp, K,
+    deltaH: dh,
+    tempMin: tMin===''?null:parseFloat(tMin),
+    tempMax: tMax===''?null:parseFloat(tMax),
+    reactants:substancesState.reactants.filter(s=>s.formula.trim()),
+    products: substancesState.products.filter(s=>s.formula.trim())
+  };
+  if(editingId){const i=reactions.findIndex(r=>r.id===editingId);if(i>=0)reactions[i]={id:editingId,...data};}
+  else reactions.push({id:'r'+Date.now(),...data});
+  render(); closeModal();
+  showToast(editingId?'수정되었습니다':'반응이 추가되었습니다');
+}
+
+function confirmDelete(id) {
+  if(!confirm('이 반응을 삭제하시겠습니까?'))return;
+  reactions=reactions.filter(r=>r.id!==id); render(); showToast('삭제되었습니다');
+}
+function deleteCurrentReaction() {
+  if(!editingId)return; closeModal();
+  reactions=reactions.filter(r=>r.id!==editingId); render(); showToast('삭제되었습니다');
+}
+
+function encodeReactions() {
+  return btoa(unescape(encodeURIComponent(JSON.stringify({reactions}))));
+}
+function generateLink() {
+  if(!reactions.length){showToast('반응을 먼저 추가하세요');return;}
+  const url=`${location.origin}${location.pathname}?data=${encodeReactions()}`;
+  document.getElementById('link-text').textContent=url;
+  document.getElementById('link-result').classList.remove('hidden');
+}
+function copyLink() {
+  const text=document.getElementById('link-text').textContent;
+  if(navigator.clipboard&&location.protocol!=='file:') navigator.clipboard.writeText(text).then(()=>showToast('링크가 복사되었습니다')).catch(()=>fallbackCopy(text));
+  else fallbackCopy(text);
+}
+function fallbackCopy(text) {
+  const ta=document.createElement('textarea');
+  ta.value=text; ta.style.cssText='position:fixed;top:0;left:0;opacity:0;pointer-events:none';
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  try{document.execCommand('copy');showToast('링크가 복사되었습니다');}
+  catch{showToast('복사 실패 — 직접 선택해 복사하세요');}
+  document.body.removeChild(ta);
+}
+function previewStudent() {
+  if(!reactions.length){showToast('반응을 먼저 추가하세요');return;}
+  location.href=location.pathname+'?data='+encodeReactions();
+}
+function goTeacher() { location.href=location.pathname+'?teacher'; }
+
+// ══════════════════════════════════════════════
+// 학생 페이지
+// ══════════════════════════════════════════════
+
+let s_idx=0, s_experiments=[], s_currentTemp=25;
+
+function initStudentPage() {
+  s_idx=0; s_experiments=[];
+  renderTabs(); loadReaction(0);
+}
+
+function renderTabs() {
+  document.getElementById('s-tabs').innerHTML=reactions.map((r,i)=>
+    `<button class="tab-btn ${i===s_idx?'active':''}" onclick="loadReaction(${i})">반응 ${i+1}</button>`
+  ).join('');
+}
+
+function loadReaction(idx) {
+  s_idx=idx; s_experiments=[];
+  s_currentTemp=reactions[idx].temperature;
+  renderTabs();
+  document.getElementById('s-equation').innerHTML=buildEquationHtml(reactions[idx]);
+  renderStudentInputs();
+  renderTable();
+}
+
+// 온도에 따른 물의 몰농도 (mol/L) — CRC Handbook 다항식 (0–100 °C)
+function waterConc(T) {
+  const T2=T*T, T3=T2*T, T4=T3*T, T5=T4*T;
+  const rho = 999.842594 + 6.793952e-2*T - 9.095290e-3*T2
+            + 1.001685e-4*T3 - 1.120083e-6*T4 + 6.536332e-9*T5; // kg/m³
+  return Math.max(0, rho / 18.015); // mol/L
+}
+
+// l/s 물질의 유효 농도 (온도 반영)
+function getFixedConc(s, T) {
+  if (s.state === 'l' && s.formula.toLowerCase() === 'h2o') return waterConc(T);
+  return s.fixedConc;
+}
+
+// van't Hoff: K at temperature T (°C)
+function calcKAtTemp(r, T) {
+  if(r.deltaH==null) return r.K;
+  const T1=r.temperature+273.15, T2=T+273.15;
+  if(T2<=0) return null;
+  return r.K * Math.exp(-(r.deltaH*1000/8.314)*(1/T2-1/T1));
+}
+
+function renderStudentInputs() {
+  const r=reactions[s_idx];
+  const variable=allSubs(r).filter(s=>s.state!=='l'&&s.state!=='s');
+  let html='';
+
+  // 온도 슬라이더
+  if(r.deltaH!=null) {
+    const tMin=r.tempMin??Math.max(-272,r.temperature-200);
+    const tMax=r.tempMax??r.temperature+200;
+    html+=`
+      <div class="temp-box">
+        <div class="temp-box-header">
+          <span class="temp-label">온도</span>
+          <span class="temp-value" id="s-temp-val">${s_currentTemp}°C</span>
+        </div>
+        <input type="range" id="s-temp-slider"
+               min="${tMin}" max="${tMax}" step="1" value="${s_currentTemp}"
+               oninput="onTempChange(this.value)">
+        <div class="temp-range-labels"><span>${tMin}°C</span><span>${tMax}°C</span></div>
+      </div>`;
+  }
+
+  // 초기 농도 입력 (반응 순서대로, l/s는 회색 비활성)
+  html+='<div class="s-inputs-grid">';
+  for(const s of allSubs(r)) {
+    const isFixed = s.state==='l' || s.state==='s';
+    if(isFixed) {
+      const conc = getFixedConc(s, s_currentTemp);
+      html+=`
+        <div class="s-input-row">
+          <span class="s-input-label">[${formatFormula(s.formula)}]₀</span>
+          <input type="number" class="form-input" id="s-fixed-${s.id}"
+                 value="${conc.toFixed(4)}" disabled
+                 style="background:var(--gray-100);color:var(--gray-500);cursor:default;border-color:var(--gray-200)">
+          <span class="s-unit">M</span>
+        </div>`;
+    } else {
+      html+=`
+        <div class="s-input-row">
+          <span class="s-input-label">[${formatFormula(s.formula)}]₀</span>
+          <input type="number" class="form-input" id="s-in-${s.id}"
+                 placeholder="0" min="0" step="any" inputmode="decimal">
+          <span class="s-unit">M</span>
+        </div>`;
+    }
+  }
+  html+='</div>';
+
+  document.getElementById('s-input-area').innerHTML=html;
+}
+
+function onTempChange(val) {
+  s_currentTemp=parseFloat(val);
+  const el=document.getElementById('s-temp-val');
+  if(el) el.textContent=s_currentTemp+'°C';
+  // l/s 입력창 값 업데이트
+  allSubs(reactions[s_idx]).filter(s=>s.state==='l'||s.state==='s').forEach(s=>{
+    const inp=document.getElementById(`s-fixed-${s.id}`);
+    if(inp) inp.value=getFixedConc(s,s_currentTemp).toFixed(4);
+  });
+}
+
+// ── 평형 풀이기 (이분법, log 스케일) ──
+function solveEquilibrium(r, initConcs, K) {
+  const varR=r.reactants.filter(s=>s.state!=='l'&&s.state!=='s');
+  const varP=r.products.filter(s=>s.state!=='l'&&s.state!=='s');
+  let xiMax=Infinity, xiMin=-Infinity;
+  for(const s of varR) xiMax=Math.min(xiMax,(initConcs[s.id]||0)/s.coefficient);
+  for(const s of varP) xiMin=Math.max(xiMin,-(initConcs[s.id]||0)/s.coefficient);
+  const eps=1e-12;
+  xiMin+=eps; xiMax-=eps;
+  if(xiMin>xiMax) throw new Error('농도 범위 오류');
+  const logK=Math.log(K);
+  function logQ(xi){
+    let lq=0;
+    for(const s of varP){const c=(initConcs[s.id]||0)+s.coefficient*xi;if(c<=0)return Infinity;lq+=s.coefficient*Math.log(c);}
+    for(const s of varR){const c=(initConcs[s.id]||0)-s.coefficient*xi;if(c<=0)return -Infinity;lq-=s.coefficient*Math.log(c);}
+    return lq;
+  }
+  const fMin=logQ(xiMin)-logK, fMax=logQ(xiMax)-logK;
+  if(fMin>=0&&fMax>=0) return xiMin;
+  if(fMin<=0&&fMax<=0) return xiMax;
+  let lo=fMin<0?xiMin:xiMax, hi=fMin<0?xiMax:xiMin;
+  for(let i=0;i<200;i++){
+    if(Math.abs(hi-lo)<1e-13)break;
+    const mid=(lo+hi)/2;
+    if(logQ(mid)-logK<0)lo=mid; else hi=mid;
+  }
+  return (lo+hi)/2;
+}
+
+function addExperiment() {
+  const r=reactions[s_idx];
+  const variable=allSubs(r).filter(s=>s.state!=='l'&&s.state!=='s');
+  const initConcs={};
+  for(const s of allSubs(r)){
+    if(s.state==='l'||s.state==='s') initConcs[s.id]=getFixedConc(s,s_currentTemp);
+    else { const v=parseFloat(document.getElementById(`s-in-${s.id}`)?.value); initConcs[s.id]=isNaN(v)?0:v; }
+  }
+  if(variable.every(s=>initConcs[s.id]===0)){showToast('초기 농도를 하나 이상 입력하세요');return;}
+  if(variable.some(s=>initConcs[s.id]<0)){showToast('농도는 0 이상이어야 합니다');return;}
+
+  const K=calcKAtTemp(r,s_currentTemp);
+  if(!K||K<=0){showToast('해당 온도에서 K를 계산할 수 없습니다');return;}
+
+  let xi;
+  try{xi=solveEquilibrium(r,initConcs,K);}
+  catch(e){showToast('평형 계산 실패: '+e.message);return;}
+
+  const eqConcs={};
+  for(const s of allSubs(r)){
+    if(s.state==='l'||s.state==='s') eqConcs[s.id]=getFixedConc(s,s_currentTemp);
+    else if(r.reactants.some(x=>x.id===s.id)) eqConcs[s.id]=Math.max(0,(initConcs[s.id]||0)-s.coefficient*xi);
+    else eqConcs[s.id]=Math.max(0,(initConcs[s.id]||0)+s.coefficient*xi);
+  }
+  const formulas=calcFormulas(r,eqConcs);
+  s_experiments.push({initConcs,eqConcs,formulas,temperature:s_currentTemp});
+  renderTable();
+}
+
+function clearExperiments(){s_experiments=[];renderTable();}
+
+// ── 후보 식 ──
+function getFormulaCols(r) {
+  const hasFixed=allSubs(r).some(s=>s.state==='l'||s.state==='s');
+  const fixedLabel=allSubs(r).filter(s=>s.state==='l'||s.state==='s').map(s=>`[${formatFormula(s.formula)}]`).join('');
+  if(!hasFixed) return [
+    {label:buildQHeader('ignore',r,false),type:'ignore',inc:false},
+    {label:buildQHeader('mult',  r,false),type:'mult',  inc:false},
+    {label:buildQHeader('exp',   r,false),type:'exp',   inc:false}
+  ];
+  return [
+    {label:buildQHeader('ignore',r,true), type:'ignore',inc:true, group:`${fixedLabel} 포함`},
+    {label:buildQHeader('mult',  r,true), type:'mult',  inc:true, group:`${fixedLabel} 포함`},
+    {label:buildQHeader('exp',   r,true), type:'exp',   inc:true, group:`${fixedLabel} 포함`},
+    {label:buildQHeader('ignore',r,false),type:'ignore',inc:false,group:`${fixedLabel} 제외`},
+    {label:buildQHeader('mult',  r,false),type:'mult',  inc:false,group:`${fixedLabel} 제외`},
+    {label:buildQHeader('exp',   r,false),type:'exp',   inc:false,group:`${fixedLabel} 제외`}
+  ];
+}
+
+function buildQHeader(type,r,inc) {
+  const f=arr=>arr.filter(s=>inc||(s.state!=='l'&&s.state!=='s'));
+  const term=s=>{
+    const ff=formatFormula(s.formula);
+    if(type==='ignore') return `[${ff}]`;
+    if(type==='mult'){const c=s.coefficient===1?'':s.coefficient;return `${c}[${ff}]`;}
+    const e=s.coefficient===1?'':`<sup>${s.coefficient}</sup>`;
+    return `[${ff}]${e}`;
+  };
+  return `<span class="frac"><span class="fn">${f(r.products).map(term).join('·')}</span><span class="fd">${f(r.reactants).map(term).join('·')}</span></span>`;
+}
+
+function calcQValue(r,eqConcs,type,inc){
+  const f=arr=>arr.filter(s=>inc||(s.state!=='l'&&s.state!=='s'));
+  let num=1,den=1;
+  for(const s of f(r.products)){const c=eqConcs[s.id];num*=type==='ignore'?c:type==='mult'?s.coefficient*c:Math.pow(c,s.coefficient);}
+  for(const s of f(r.reactants)){const c=eqConcs[s.id];den*=type==='ignore'?c:type==='mult'?s.coefficient*c:Math.pow(c,s.coefficient);}
+  return num/den;
+}
+
+function calcFormulas(r,eqConcs){return getFormulaCols(r).map(col=>calcQValue(r,eqConcs,col.type,col.inc));}
+
+// ── 결과 표 ──
+function renderTable() {
+  const sec=document.getElementById('s-results-section');
+  if(!s_experiments.length){sec.style.display='none';return;}
+  sec.style.display='';
+
+  const r=reactions[s_idx];
+  const variable=allSubs(r).filter(s=>s.state!=='l'&&s.state!=='s');
+  const allS=allSubs(r);
+  const cols=getFormulaCols(r);
+  const hasFixed=allS.some(s=>s.state==='l'||s.state==='s');
+  const hasTempCol=r.deltaH!=null;
+  const ROMAN=['I','II','III','IV','V','VI','VII','VIII','IX','X'];
+
+  // 그룹 헤더
+  const tempSpan=hasTempCol?1:0;
+  let groupRow=`<tr>
+    <th rowspan="2" style="background:var(--gray-100)">구분</th>
+    ${hasTempCol?'<th rowspan="2" style="background:var(--teal-light);color:var(--teal)">온도</th>':''}
+    <th colspan="${allS.length}" style="background:var(--gray-100)">초기 농도 (M)</th>
+    <th colspan="${allS.length}" style="background:var(--gray-100)">평형 농도 (M)</th>`;
+  if(hasFixed){
+    groupRow+=`<th colspan="3" class="group-header">${cols[0].group}</th>`;
+    groupRow+=`<th colspan="3" class="group-header">${cols[3].group}</th>`;
+  } else {
+    groupRow+=`<th colspan="3" style="background:var(--gray-100)">후보 식</th>`;
+  }
+  groupRow+='</tr>';
+
+  // 개별 헤더
+  let subRow='<tr>';
+  for(const s of allS) subRow+=`<th>[${formatFormula(s.formula)}]</th>`;
+  for(const s of allS) subRow+=`<th>[${formatFormula(s.formula)}]<sub>eq</sub></th>`;
+  for(const col of cols) subRow+=`<th>${col.label}</th>`;
+  subRow+='</tr>';
+
+  // 데이터 행
+  let tbody='<tbody>';
+  s_experiments.forEach((exp,i)=>{
+    tbody+=`<tr><td class="label-cell">실험&nbsp;${ROMAN[i]||i+1}</td>`;
+    if(hasTempCol) tbody+=`<td class="temp-cell">${exp.temperature}°C</td>`;
+    for(const s of allS) tbody+=`<td>${fmtConc(exp.initConcs[s.id])}</td>`;
+    for(const s of allS) tbody+=`<td>${fmtConc(exp.eqConcs[s.id])}</td>`;
+    exp.formulas.forEach(v=>tbody+=`<td class="formula-cell">${fmtQ(v)}</td>`);
+    tbody+='</tr>';
+  });
+  tbody+='</tbody>';
+
+  document.getElementById('s-table').innerHTML=`<thead>${groupRow}${subRow}</thead>${tbody}`;
+}
+
+function fmtConc(c){
+  if(c==null||isNaN(c))return'—';
+  if(c===0)return'0';
+  if(Math.abs(c)<1e-9)return'≈0';
+  if(Math.abs(c)>=0.0001)return c.toFixed(4);
+  const e=Math.floor(Math.log10(Math.abs(c)));
+  return `${parseFloat((c/Math.pow(10,e)).toPrecision(3))}×10<sup>${e}</sup>`;
+}
+function fmtQ(v){
+  if(!isFinite(v)||isNaN(v))return'—';
+  if(v===0)return'0';
+  const a=Math.abs(v);
+  if(a>=0.001&&a<100000)return parseFloat(v.toPrecision(4)).toString();
+  const e=Math.floor(Math.log10(a));
+  return `${parseFloat((v/Math.pow(10,e)).toPrecision(3))}×10<sup>${e}</sup>`;
+}
+
+// ══════════════════════════════════════════════
+// 라우팅
+// ══════════════════════════════════════════════
+
+const urlParams=new URLSearchParams(location.search);
+const isTeacher=urlParams.has('teacher');
+const encodedData=urlParams.get('data');
+
+if(isTeacher){
+  document.getElementById('teacher-page').classList.remove('hidden');
+  render();
+} else {
+  if(encodedData){
+    try{ reactions=JSON.parse(decodeURIComponent(escape(atob(encodedData)))).reactions; }
+    catch{ showToast('링크 데이터 오류 — 기본 반응으로 표시합니다'); }
+  }
+  document.getElementById('student-page').classList.remove('hidden');
+  initStudentPage();
+}
+</script>
+</body>
+</html>
